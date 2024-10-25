@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Egg Basket</title>
+    <title>Jack's Medulla Oblongota</title>
     <style>
         body {
             background-color: #222222;
@@ -83,85 +83,22 @@
     </table>
     <script>
         const web3 = new Web3(new Web3.providers.HttpProvider('https://polygon-amoy.infura.io/v3/d625808bbdc24dd4844b5315cee1a3ba'));
-        const contractABI = [
-	{
-		"inputs": [],
-		"name": "act",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [],
-		"name": "fetch",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "address payable",
-						"name": "p",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "r",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "s",
-						"type": "uint256"
-					}
-				],
-				"internalType": "struct homenode1.basket[]",
-				"name": "",
-				"type": "tuple[]"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-];
-        const contractAddress = '0x3A417f985045A42a8c2EE983070CA60DEcA03cA9';
+        const contractABI = 
+        const contractAddress = '';
         const contract = new web3.eth.Contract(contractABI, contractAddress);
         let b, dep, ceiling, floor, u, v, w;
 
         async function build() {
             const result = await contract.methods.fetch().call();
             b = {
-                p: result[0].map(item => item.p),
-                r: result[0].map(item => item.r),
-                s: result[0].map(item => item.s)
+                p: result[1].map(item => item),
+                r: result[1].map(item => item),
+                s: result[1].map(item => item)
             };
-            v = result[1];
+            v = result[2];
             const z = result[2];
-            const q = result[3];
-            const n = result[4];
+            const q = result[2];
+            const n = result[0];
             const t = Math.floor(Date.now() / 1000);
             dep = b.s[0];
             document.getElementById('contract').innerText = n;
