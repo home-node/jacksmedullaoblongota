@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egg Basket</title>
+    <style>
+        body {
+            background-color: #222222;
+            color: #FFFFFF;
+            font-family: Arial, sans-serif;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #333333;
+        }
+        header button {
+            margin-left: 15px;
+            padding: 8px;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+        }
+        th {
+            background-color: #FFFFFF;
+            color: #000000;
+            border: 1px solid #666666;
+        }
+        td {
+            border: 1px solid #8e8e8e;
+            padding: 8px;
+            text-align: left;
+        }
+        .active {
+            background-color: #000000;
+        }
+        .rot {
+            background-color: #8e8e8e;
+            color: #000000;
+        }
+        .sold {
+            background-color: #EEEEEE;
+            color: #000000;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.5.2/web3.min.js"></script>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>Contract: <span id="contract"></span></h1>
+        </div>
+        <div class="header-info">
+            <div id="r"></div>
+            <div id="z"></div>
+            <div id="q"></div>
+            <div id="t"></div>
+            <div id="life"></div>
+        </div>
+        <div class="header-controls">
+            <button id="refresh"> ↻ </button>
+        </div>
+    </header>
+    <table>
+        <thead>
+            <tr>
+                <th>Element</th>
+                <th>Queue</th>
+                <th>Address</th>
+                <th>Stamp</th>
+                <th>Time since lay</th>
+                <th>Time until rot</th>
+            </tr>
+        </thead>
+        <tbody id="dataBody">
+            <!-- Data -->
+        </tbody>
+    </table>
+    <script>
+        const web3 = new Web3(new Web3.providers.HttpProvider('https://polygon-amoy.infura.io/v3/d625808bbdc24dd4844b5315cee1a3ba'));
+        const contractABI = [
+	{
+		"inputs": [],
+		"name": "act",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "fetch",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "address payable",
+						"name": "p",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "r",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "s",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct homenode1.basket[]",
+				"name": "",
+				"type": "tuple[]"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+        const contractAddress = '0x3A417f985045A42a8c2EE983070CA60DEcA03cA9';
+        const contract = new web3.eth.Contract(contractABI, contractAddress);
+        let b, dep, ceiling, floor, u, v, w;
+
+        async function build() {
+            const result = await contract.methods.fetch().call();
+            b = {
+                p: result[0].map(item => item.p),
+                r: result[0].map(item => item.r),
+                s: result[0].map(item => item.s)
+            };
+            v = result[1];
+            const z = result[2];
+            const q = result[3];
+            const n = result[4];
+            const t = Math.floor(Date.now() / 1000);
+            dep = b.s[0];
+            document.getElementById('contract').innerText = n;
+            document.getElementById('r').innerText = `r (rot): ${pace(v)}`;
+            document.getElementById('z').innerText = `z (lower bound): ${z}`;
+            document.getElementById('q').innerText = `q (current queue): ${q}`;
+            document.getElementById('t').innerText = `t (current timestamp): ${t}`;
+            document.getElementById('life').innerText = `lifespan: ${pace(t - dep)}`;
+
+            const tableBody = document.getElementById('dataBody');
+            tableBody.innerHTML = '';
+            ceiling = Math.min(b.p.length - 1, 1048576);
+            floor = Math.max(ceiling - 1048576, 0);
+            for (let i = ceiling; i >= floor; i--) {
+                const row = document.createElement('tr');
+                row.className = b.r[i] == 2 ? 'active' : b.r[i] == 0 ? 'rot' : 'sold';
+                let queue;
+                if (b.r[i] == 0) {queue = "rotten";} else if (b.r[i] == 1) {queue = "sold";} else {queue = 1 + i - q;}
+                u = t - b.s[i];
+                if (v >= u && b.r[i] == 2) {w = v - u;} else {w = 0;}
+
+                row.innerHTML = `
+                    <td>${i}</td>
+                    <td>${queue}</td>
+                    <td>${b.p[i]}</td>
+                    <td>${b.s[i]}</td>
+                    <td>${pace(u)}</td>
+                    <td>${pace(w)}</td>
+                `;
+                tableBody.appendChild(row);
+            }
+        }
+
+        async function tick() {
+            const t = Math.floor(Date.now() / 1000);
+            const tableBody = document.getElementById('dataBody');
+            document.getElementById('t').innerText = `t (current timestamp): ${t}`;
+            document.getElementById('life').innerText = `lifespan: ${pace(t - dep)}`;
+            for (let i = ceiling; i > floor; i--) {
+                u = t - b.s[i];
+                if (u < v && b.r[i] == 2) { 
+                    w = v - u;
+                } 
+                else {
+                    w = 0;
+                }
+                const cells = tableBody.rows[ceiling - i].cells;
+                cells[4].innerText = pace(u);
+                cells[5].innerText = pace(w);
+            }
+        }
+
+        function pace(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${h}h, ${m}m, ${s}s`;
+        }
+
+        document.getElementById('refresh').addEventListener('click', build);
+        setInterval(tick, 1000);
+
+        build();
+    </script>
+</body>
+</html>
